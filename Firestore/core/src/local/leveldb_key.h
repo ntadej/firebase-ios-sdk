@@ -25,6 +25,7 @@
 #include "Firestore/core/src/model/resource_path.h"
 #include "Firestore/core/src/model/types.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "leveldb/slice.h"
 
 namespace firebase {
@@ -1161,6 +1162,73 @@ class LevelDbDocumentOverlayCollectionIndexKey
 
  private:
   model::ResourcePath collection_;
+};
+
+/** A key in the "collection group" index of the document_overlays table. */
+class LevelDbDocumentOverlayCollectionGroupIndexKey
+    : public LevelDbDocumentOverlayIndexKey {
+ public:
+  /**
+   * Creates a key prefix that points just before the first key in the table.
+   */
+  static std::string KeyPrefix();
+
+  /**
+   * Creates a key prefix that points just before the first key for the given
+   * user_id.
+   */
+  static std::string KeyPrefix(absl::string_view user_id);
+
+  /**
+   * Creates a key prefix that points just before the first key for the given
+   * user_id, collection group.
+   */
+  static std::string KeyPrefix(absl::string_view user_id,
+                               absl::string_view collection_group);
+
+  /**
+   * Creates a key prefix that points just before the first key for the given
+   * user_id, collection group, and largest_batch_id.
+   */
+  static std::string KeyPrefix(absl::string_view user_id,
+                               absl::string_view collection_group,
+                               model::BatchId largest_batch_id);
+
+  /**
+   * Creates a complete key that points to a specific user_id, collection group,
+   * and largest_batch_id for a given key in the document_overlays table.
+   */
+  static std::string Key(absl::string_view user_id,
+                         absl::string_view collection_group,
+                         model::BatchId largest_batch_id,
+                         const model::DocumentKey& document_key);
+
+  /**
+   * Creates a complete key that points to a specific key in the overlays table.
+   */
+  static std::string Key(const LevelDbDocumentOverlayKey& key) {
+    return Key(key.user_id(), key.document_key().GetCollectionId().value_or(""),
+               key.largest_batch_id(), key.document_key());
+  }
+
+  /**
+   * Decodes the given complete key, storing the decoded values in this
+   * instance.
+   *
+   * @return true if the key successfully decoded, false otherwise. If false is
+   * returned, this instance is in an undefined state until the next call to
+   * `Decode()`.
+   */
+  ABSL_MUST_USE_RESULT
+  bool Decode(absl::string_view key);
+
+  /** The collection_group, as encoded in the key. */
+  const std::string& collection_group() const {
+    return collection_group_;
+  }
+
+ private:
+  std::string collection_group_;
 };
 
 }  // namespace local

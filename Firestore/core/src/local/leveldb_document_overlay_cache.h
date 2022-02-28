@@ -63,7 +63,7 @@ class LevelDbDocumentOverlayCache final : public DocumentOverlayCache {
   OverlayByDocumentKeyMap GetOverlays(const model::ResourcePath& collection,
                                       int since_batch_id) const override;
 
-  OverlayByDocumentKeyMap GetOverlays(const std::string& collection_group,
+  OverlayByDocumentKeyMap GetOverlays(absl::string_view collection_group,
                                       int since_batch_id,
                                       std::size_t count) const override;
 
@@ -71,9 +71,10 @@ class LevelDbDocumentOverlayCache final : public DocumentOverlayCache {
   friend class LevelDbDocumentOverlayCacheTestHelper;
 
   // Returns the number of index entries of the various types.
-  // This method exists for unit testing only.
+  // These methods exist for unit testing only.
   int GetLargestBatchIdIndexEntryCount() const;
   int GetCollectionIndexEntryCount() const;
+  int GetCollectionGroupIndexEntryCount() const;
 
   int GetOverlayCount() const override;
   int CountEntriesWithKeyPrefix(const std::string& key_prefix) const;
@@ -90,10 +91,6 @@ class LevelDbDocumentOverlayCache final : public DocumentOverlayCache {
 
   void DeleteOverlay(const LevelDbDocumentOverlayKey&);
 
-  void ForEachOverlay(
-      std::function<void(LevelDbDocumentOverlayKey&&,
-                         absl::string_view encoded_mutation)>) const;
-
   void ForEachKeyWithLargestBatchId(
       int largest_batch_id,
       std::function<void(LevelDbDocumentOverlayKey&&)>) const;
@@ -102,6 +99,11 @@ class LevelDbDocumentOverlayCache final : public DocumentOverlayCache {
       const model::ResourcePath& collection,
       int since_batch_id,
       std::function<void(LevelDbDocumentOverlayKey&&)>) const;
+
+  void ForEachKeyInCollectionGroup(
+      absl::string_view collection_group,
+      int since_batch_id,
+      std::function<bool(LevelDbDocumentOverlayKey&&)>) const;
 
   absl::optional<model::mutation::Overlay> GetOverlay(
       const LevelDbDocumentOverlayKey& decoded_key) const;
